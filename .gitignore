@@ -39,3 +39,4 @@ config
 config.py
 .idea
 .idea/
+lectio-api/config.py
