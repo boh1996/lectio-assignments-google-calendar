@@ -40,3 +40,4 @@ config.py
 .idea
 .idea/
 lectio-api/config.py
+googlecalendar/config.py
