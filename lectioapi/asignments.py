@@ -16,6 +16,7 @@ def assignments(config):
 
     if session == False:
         print "Error"
+        return []
     else:
         url = urls.assigment_list.replace("{{SCHOOL_ID}}", config.school_id).replace("{{STUDENT_ID}}", config.lectio_id)
 
