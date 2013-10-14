@@ -7,6 +7,7 @@ from sqlalchemy.orm import sessionmaker
 from googleauth import google_oauth
 from googlecalendar import calendar as GoogleCalendarObject
 import config as appConfig
+import calendar
 
 # Converts a dict data structure into a class
 class dic2class(dict):
@@ -18,7 +19,11 @@ def createTitle(event):
     return event["title"]
 
 def sameEvent(googleEvent,localEvent):
-    return localEvent["link"] == googleEvent["description"]
+    timezone("Europe/Copenhagen")
+    startTuple = localEvent["date"].utctimetuple()
+    googleStartTuple = datetime.strptime(googleEvent["start"]["dateTime"][:-6], "%Y-%m-%dT%H:%M:%S").utctimetuple()
+
+    return localEvent["link"] == googleEvent["description"] and calendar.timegm(googleStartTuple) == calendar.timegm(startTuple)
 
 __author__ = "Bo Thomsen <bo@illution.dk>"
 
