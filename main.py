@@ -1,6 +1,7 @@
 from lectioapi import assignments
 import requests
 from datetime import *
+from time import mktime
 from pytz import timezone
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -58,10 +59,11 @@ for task in tasks:
     }
 
     # Retrieve the assignments from lectio, using the lectio-api library
-    assignmentList = assignments.assignments(dic2class(settings))
+    assignmentObject = assignments.assignments(dic2class(settings))
 
     # If assignments is found
-    if len(assignmentList) > 0:
+    if assignmentObject["status"] == "ok":
+        assignmentList = assignmentObject["list"]
 
         # Retrive the Google Auth information from the table
         tokenQuery = session.execute('SELECT * FROM user WHERE user_id="%s"' % (task["google_id"]))
@@ -120,8 +122,14 @@ for task in tasks:
 
             # If it doesn't exist there, delete it from Google Calendar
             if found == False:
-                print "Delete"
                 GoogleCalendar.deleteEvent(task["calendar_id"], googleEvent["id"])
 
+        # Add Last updated timestamp
+        session.execute('UPDATE assignment_tasks SET last_updated="%s" WHERE google_id="%s"' % (str(mktime(datetime.now().timetuple()))[:-2],task["google_id"]))
+        session.commit()
     else:
-        print "Error"
+        # Add Error to DB
+        session.execute('INSERT INTO errors COLUMNS(system, error_time, error_type, user_id)' % ("assignments", str(mktime(datetime.now().timetuple()))[:-2], assignmentObject["type"],task["google_id"]))
+        session.commit()
+
+print "Done"
