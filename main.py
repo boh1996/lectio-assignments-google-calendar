@@ -40,6 +40,21 @@ tasks = session.execute("SELECT * FROM assignment_tasks")
 
 # Loops over the tasks
 for task in tasks:
+    userData = False
+
+    # Retrive the Google Auth information from the table
+    tokenQuery = session.execute('SELECT * FROM user WHERE user_id="%s"' % (task["google_id"]))
+
+    GoogleOAuth = google_oauth.GoogleOAuth()
+
+    # Fetch the refresh token, from the database result
+    for row in tokenQuery:
+        userData = row
+        refreshToken = row["refresh_token"]
+        # Fetch the access token from Google using the python-google-oauth library
+        accessTokenData = GoogleOAuth.refresh(refreshToken)
+        accessToken = accessTokenData.access_token
+
     settings = {
         # App Settings
         "lectio_base_url" : appConfig.lectio_base_url,
@@ -50,11 +65,11 @@ for task in tasks:
         "db_user" : appConfig.db_user,
 
         # User settings
-        "password" : task["password"].decode("base64"),
-        "username" : task["username"],
-        "lectio_id" : task["lectio_id"],
-        "school_id" : task["school_id"],
-        "branch_id" : task["branch_id"],
+        "password" : userData["password"].decode("base64"),
+        "username" : userData["username"],
+        "lectio_id" : userData["lectio_user_id"],
+        "school_id" : userData["school_id"],
+        "branch_id" : userData["branch_id"],
         "calendar_id" : task["calendar_id"]
     }
 
@@ -64,18 +79,6 @@ for task in tasks:
     # If assignments is found
     if assignmentObject["status"] == "ok":
         assignmentList = assignmentObject["list"]
-
-        # Retrive the Google Auth information from the table
-        tokenQuery = session.execute('SELECT * FROM user WHERE user_id="%s"' % (task["google_id"]))
-
-        GoogleOAuth = google_oauth.GoogleOAuth()
-
-        # Fetch the refresh token, from the database result
-        for row in tokenQuery:
-            refreshToken = row["refresh_token"]
-            # Fetch the access token from Google using the python-google-oauth library
-            accessTokenData = GoogleOAuth.refresh(refreshToken)
-            accessToken = accessTokenData.access_token
 
         # Assign the access token to the Google Calendar library
         GoogleCalendar = GoogleCalendarObject.GoogleCalendar()
@@ -125,7 +128,7 @@ for task in tasks:
                 GoogleCalendar.deleteEvent(task["calendar_id"], googleEvent["id"])
 
         # Add Last updated timestamp
-        session.execute('UPDATE assignment_tasks SET last_updated="%s" WHERE google_id="%s"' % (str(mktime(datetime.now().timetuple()))[:-2],task["google_id"]))
+        session.execute('UPDATE assignment_tasks SET last_updated="%s" WHERE google_id="%s"' % (str(mktime(datetime.now().timetuple()))[:-2],userData["user_id"]))
         session.commit()
     else:
         # Add Error to DB
