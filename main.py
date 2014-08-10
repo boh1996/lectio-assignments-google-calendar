@@ -1,4 +1,4 @@
-from lectioapi import assignments
+from lectioapi import asignments as assignments
 import requests
 from datetime import *
 from time import mktime
@@ -67,14 +67,14 @@ for task in tasks:
         # User settings
         "password" : userData["password"].decode("base64"),
         "username" : userData["username"],
-        "lectio_id" : userData["lectio_user_id"],
+        "student_id" : userData["lectio_user_id"],
         "school_id" : userData["school_id"],
         "branch_id" : userData["branch_id"],
         "calendar_id" : task["calendar_id"]
     }
 
     # Retrieve the assignments from lectio, using the lectio-api library
-    assignmentObject = assignments.assignments(dic2class(settings))
+    assignmentObject = assignments.assignments(settings)
 
     # If assignments is found
     if assignmentObject["status"] == "ok":
@@ -132,7 +132,7 @@ for task in tasks:
         session.commit()
     else:
         # Add Error to DB
-        session.execute('INSERT INTO errors COLUMNS(system, error_time, error_type, user_id)' % ("assignments", str(mktime(datetime.now().timetuple()))[:-2], assignmentObject["type"],task["google_id"]))
+        session.execute('INSERT INTO errors (system, error_time, error_type, user_id) VALUES("%s", "%s", "%s", "%s")' % ("assignments", str(mktime(datetime.now().timetuple()))[:-2], assignmentObject["type"],task["google_id"]))
         session.commit()
 
 print "Done"
